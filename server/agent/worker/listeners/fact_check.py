@@ -35,5 +35,5 @@ async def handle(body):
                 total_tokens=total_tokens,
                 payload=fact_check.to_json()
             ))
-            logger.info(f"Generated fact check for {fact_check_schema.kbid}")
+        logger.info(f"Generated fact check for {fact_check_schema.kbid}")
     return

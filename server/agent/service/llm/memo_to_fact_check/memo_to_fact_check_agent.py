@@ -62,7 +62,7 @@ class MemoToFactCheckAgent:
             claim=sentence,
             supporting_questions=result.supporting_questions if result else [],
             is_factual=result.is_factual if result else False,
-            correction=result.correction if result else None,
+            correction=result.correction if result else "Agent was unable to perform the fact check",
         )
 
     async def _is_fact_checkable(self, sentence: str) -> bool:
