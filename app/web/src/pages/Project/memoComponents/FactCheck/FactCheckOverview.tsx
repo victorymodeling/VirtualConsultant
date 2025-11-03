@@ -15,7 +15,6 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 import { useGetApiTasksByIdQuery } from '../../../../api/tasksApi';
-
 import FactCheckArtifact from './FactCheckArtifact';
 
 type ArtifactPayload = {
@@ -31,30 +30,30 @@ export default function FactCheckOverview({ taskId }: { taskId: number }) {
 
     const [falseOnly, setFalseOnly] = React.useState<boolean>(false);
 
+    // Normalize artifacts safely
     const artifacts = React.useMemo(() => {
         if (!data?.artifacts) return [];
-        // Parse each artifact.payload -> ArtifactPayload; ignore any that fail to parse
-        const parsed = data.artifacts
-            .map((a) => {
-                try {
-                    const p = JSON.parse(a.payload ?? '{}') as ArtifactPayload;
-                    // defend against missing keys
-                    if (
-                        typeof p.claim === 'string' &&
-                        Array.isArray(p.supporting_questions) &&
-                        typeof p.is_factual === 'boolean' &&
-                        typeof p.correction === 'string'
-                    ) {
-                        return p;
-                    }
-                } catch {
-                    // ignore malformed
-                }
-                return null;
-            })
-            .filter((p): p is ArtifactPayload => p !== null);
 
-        return parsed;
+        return data.artifacts.map((a) => {
+            let raw: any = {};
+            try {
+                raw = JSON.parse(a.payload ?? '{}');
+            } catch {
+                // fallback to empty
+                raw = {};
+            }
+
+            const normalized: ArtifactPayload = {
+                claim: typeof raw.claim === 'string' ? raw.claim : '',
+                supporting_questions: Array.isArray(raw.supporting_questions)
+                    ? raw.supporting_questions
+                    : [],
+                is_factual: typeof raw.is_factual === 'boolean' ? raw.is_factual : false,
+                correction: typeof raw.correction === 'string' ? raw.correction : '',
+            };
+
+            return normalized;
+        });
     }, [data?.artifacts]);
 
     const filtered = React.useMemo(
@@ -119,7 +118,6 @@ export default function FactCheckOverview({ taskId }: { taskId: number }) {
                 </Tooltip>
             </Stack>
 
-            {/* Summary line */}
             <Typography variant="body2" color="text.secondary">
                 Showing {filtered.length} of {artifacts.length} artifact
                 {artifacts.length === 1 ? '' : 's'}
@@ -128,7 +126,6 @@ export default function FactCheckOverview({ taskId }: { taskId: number }) {
 
             <Divider />
 
-            {/* Artifact cards */}
             {filtered.length === 0 ? (
                 <Box
                     sx={{
