@@ -78,6 +78,7 @@ public sealed class RabbitMqTaskEventPublisher : ITaskEventPublisher, IAsyncDisp
         TaskJobType.Memo       => "task.memo",
         TaskJobType.Slides     => "task.slides",
         TaskJobType.SurveyData => "task.survey_data",
+        TaskJobType.FactCheck  => "task.fact_check",
         _ => "task.unknown"
     };
 

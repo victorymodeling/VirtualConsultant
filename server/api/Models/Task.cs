@@ -11,7 +11,8 @@ public enum TaskJobType
     SurveyData  = 4,  // task.survey_data
     MemoBlock = 5,
     SlideOutline = 6,
-    Focus = 7
+    Focus = 7,
+    FactCheck = 8
 }
 
 public enum TaskJobStatus
@@ -56,7 +57,8 @@ public enum TaskArtifactResourceType
     Insight   = 0,
     Memo      = 1,
     Slidedeck = 2,
-    SurveyData = 3
+    SurveyData = 3,
+    FactCheck = 4
 }
 
 public enum TaskArtifactActionType

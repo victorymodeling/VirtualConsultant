@@ -50,6 +50,17 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["QueueTask"],
       }),
+      postApiQueueTaskFactCheck: build.mutation<
+        PostApiQueueTaskFactCheckApiResponse,
+        PostApiQueueTaskFactCheckApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/api/QueueTask/fact-check`,
+          method: "POST",
+          body: queryArg.queueCreateFactCheckTaskDto,
+        }),
+        invalidatesTags: ["QueueTask"],
+      }),
       getApiTasks: build.query<GetApiTasksApiResponse, GetApiTasksApiArg>({
         query: (queryArg) => ({
           url: `/api/Tasks`,
@@ -146,6 +157,10 @@ export type PostApiQueueTaskSurveyDataApiResponse = unknown;
 export type PostApiQueueTaskSurveyDataApiArg = {
   queueCreateSurveyDataTaskDto: QueueCreateSurveyDataTaskDto;
 };
+export type PostApiQueueTaskFactCheckApiResponse = unknown;
+export type PostApiQueueTaskFactCheckApiArg = {
+  queueCreateFactCheckTaskDto: QueueCreateFactCheckTaskDto;
+};
 export type GetApiTasksApiResponse =
   /** status 200 OK */ TaskListItemDtoPagedResultDto;
 export type GetApiTasksApiArg = {
@@ -204,6 +219,9 @@ export type QueueCreateSlidesTaskDto = {
 export type QueueCreateSurveyDataTaskDto = {
   projectId?: number;
 };
+export type QueueCreateFactCheckTaskDto = {
+  memoId?: number;
+};
 export type TaskJobType =
   | "Insights"
   | "FullReport"
@@ -212,7 +230,8 @@ export type TaskJobType =
   | "SurveyData"
   | "MemoBlock"
   | "SlideOutline"
-  | "Focus";
+  | "Focus"
+  | "FactCheck";
 export type TaskJobStatus =
   | "Queued"
   | "Running"
@@ -244,7 +263,8 @@ export type TaskArtifactResourceType =
   | "Insight"
   | "Memo"
   | "Slidedeck"
-  | "SurveyData";
+  | "SurveyData"
+  | "FactCheck";
 export type TaskArtifactActionType = "Create" | "Edit";
 export type TaskArtifactDto = {
   id?: number;
@@ -306,6 +326,7 @@ export const {
   usePostApiQueueTaskMemoMutation,
   usePostApiQueueTaskSlidesMutation,
   usePostApiQueueTaskSurveyDataMutation,
+  usePostApiQueueTaskFactCheckMutation,
   useGetApiTasksQuery,
   usePostApiTasksMutation,
   useGetApiTasksByIdQuery,

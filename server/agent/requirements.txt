@@ -6,3 +6,4 @@ pydantic-settings
 
 pydantic_ai
 aio-pika
+spacy

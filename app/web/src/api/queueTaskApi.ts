@@ -50,6 +50,17 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["QueueTask"],
       }),
+      postApiQueueTaskFactCheck: build.mutation<
+        PostApiQueueTaskFactCheckApiResponse,
+        PostApiQueueTaskFactCheckApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/api/QueueTask/fact-check`,
+          method: "POST",
+          body: queryArg.queueCreateFactCheckTaskDto,
+        }),
+        invalidatesTags: ["QueueTask"],
+      }),
     }),
     overrideExisting: false,
   });
@@ -70,6 +81,10 @@ export type PostApiQueueTaskSurveyDataApiResponse = unknown;
 export type PostApiQueueTaskSurveyDataApiArg = {
   queueCreateSurveyDataTaskDto: QueueCreateSurveyDataTaskDto;
 };
+export type PostApiQueueTaskFactCheckApiResponse = unknown;
+export type PostApiQueueTaskFactCheckApiArg = {
+  queueCreateFactCheckTaskDto: QueueCreateFactCheckTaskDto;
+};
 export type QueueCreateInsightsTaskDto = {
   projectId?: number;
   numberOfInsights?: number | null;
@@ -87,9 +102,13 @@ export type QueueCreateSlidesTaskDto = {
 export type QueueCreateSurveyDataTaskDto = {
   projectId?: number;
 };
+export type QueueCreateFactCheckTaskDto = {
+  memoId?: number;
+};
 export const {
   usePostApiQueueTaskInsightsMutation,
   usePostApiQueueTaskMemoMutation,
   usePostApiQueueTaskSlidesMutation,
   usePostApiQueueTaskSurveyDataMutation,
+  usePostApiQueueTaskFactCheckMutation,
 } = injectedRtkApi;

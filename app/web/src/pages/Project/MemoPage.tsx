@@ -28,6 +28,7 @@ import GenerateMemoDialogue from "./memoComponents/GenerateMemoDialog.tsx";
 // ⬇️ NEW: poller for background task status
 import TaskStatusPoller from "../../components/TaskStatusPoller";
 import GoogleDocExpander from "./memoComponents/GoogleDocExpander.tsx";
+import FactCheckExpander from "./memoComponents/FactCheck";
 
 export type MemoViewMode = "Selecting" | "Creating";
 
@@ -208,9 +209,15 @@ export default function MemoPage() {
             }
             {
                 memoId &&
-                <Box sx={{ mt: 3 }}>
-                    <GoogleDocExpander />
-                </Box>
+                <>
+                    <Box sx={{ mt: 3 }}>
+                        <GoogleDocExpander />
+                    </Box>
+                    <Box sx={{ mt: 3 }}>
+                        <FactCheckExpander />
+                    </Box>
+                </>
+
             }
         </Container>
     );

@@ -14,9 +14,9 @@ namespace api.Dtos
         public string? Focus { get; set; }
     }
 
-    public class QueueCreateFullReportTaskDto
+    public sealed class QueueCreateFactCheckTaskDto
     {
-        public int ProjectId { get; set; }
+        public int MemoId { get; set; }
     }
 
     public class QueueCreateMemoTaskDto

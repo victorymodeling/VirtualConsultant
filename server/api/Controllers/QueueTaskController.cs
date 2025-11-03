@@ -252,6 +252,55 @@ public async Task<IActionResult> QueueSlides([FromBody] QueueCreateSlidesTaskDto
                 key_number = proj.KeyNumber
             });
 
+    [HttpPost("fact-check")]
+    public async Task<IActionResult> QueueFactCheck(
+        [FromBody] QueueCreateFactCheckTaskDto dto,
+        CancellationToken ct)
+    {
+        // 1) Load memo (must exist; provides project_id + doc_id)
+        var memo = await _db.Memos
+            .AsNoTracking()
+            .Where(m => m.Id == dto.MemoId)
+            .Select(m => new { m.Id, m.ProjectId, m.DocId })
+            .SingleOrDefaultAsync(ct);
+
+        if (memo is null)
+            return NotFound($"Memo {dto.MemoId} not found.");
+
+        if (string.IsNullOrWhiteSpace(memo.DocId))
+            return BadRequest($"Memo {dto.MemoId} has no doc id.");
+
+        // 2) Load project (provides kbid; key_number = 0)
+        var proj = await _db.Projects
+            .AsNoTracking()
+            .Where(p => p.Id == memo.ProjectId)
+            .Select(p => new ProjectShape
+            {
+                Id = p.Id,
+                KbId = p.Kbid,
+                KeyNumber = 0,
+                ProjectContext = p.ProjectContext
+            })
+            .SingleOrDefaultAsync(ct);
+
+        if (proj is null)
+            return NotFound($"Project {memo.ProjectId} not found.");
+
+        // 3) Shared flow: create task, build payload, save, publish, return
+        return await CreateAndPublishAsync(
+            proj.Id,
+            TaskJobType.FactCheck,
+            (task, _) => new
+            {
+                task_id = task.Id,
+                project_id = proj.Id,
+                kbid = proj.KbId,
+                key_number = 0,
+                memo_id = memo.Id,
+                doc_id = memo.DocId
+            });
+    }
+    
     // ---- Shared flow -------------------------------------------------------
 
     private async Task<IActionResult> CreateAndPublishAsync<TPayload>(
