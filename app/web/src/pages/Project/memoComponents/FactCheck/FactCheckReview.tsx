@@ -29,6 +29,7 @@ function formatDateTime(iso?: string | null) {
 
 export default function FactCheckReview() {
     const projectId = useAppSelector((s) => s.selected.projectId);
+    const memoId = useAppSelector((s) => s.selected.memoId);
 
     // Completed FactCheck tasks for this project
     const tasksQuery = useGetApiTasksQuery(
@@ -37,8 +38,8 @@ export default function FactCheckReview() {
             status: 'Succeeded',
             type: 'FactCheck',
             page: 1,
+            memoId: memoId!,
             pageSize: 100,
-            sort: 'completedAt desc', // ask for server-side sort too
         },
         { skip: projectId == null }
     );

@@ -71,6 +71,7 @@ const injectedRtkApi = api
             type: queryArg["type"],
             createdAfter: queryArg.createdAfter,
             createdBefore: queryArg.createdBefore,
+            memoId: queryArg.memoId,
             page: queryArg.page,
             pageSize: queryArg.pageSize,
             sort: queryArg.sort,
@@ -170,6 +171,7 @@ export type GetApiTasksApiArg = {
   type?: TaskJobType;
   createdAfter?: string;
   createdBefore?: string;
+  memoId?: number;
   page?: number;
   pageSize?: number;
   sort?: string;

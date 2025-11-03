@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
@@ -36,6 +37,7 @@ public class TasksController : ControllerBase
         [FromQuery] TaskJobType? type = null,
         [FromQuery] DateTimeOffset? createdAfter = null,
         [FromQuery] DateTimeOffset? createdBefore = null,
+        [FromQuery] int? memoId = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         [FromQuery] string sort = "-CreatedAt")
@@ -62,7 +64,7 @@ public class TasksController : ControllerBase
 
         if (createdBefore is not null)
             q = q.Where(t => t.CreatedAt < createdBefore);
-
+        
         q = sort switch
         {
             "CreatedAt"   => q.OrderBy(t => t.CreatedAt).ThenBy(t => t.Id),
@@ -76,17 +78,53 @@ public class TasksController : ControllerBase
             _             => q.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id)
         };
 
-        var total = await q.CountAsync();
+        if (memoId is null)
+        {
+            var total = await q.CountAsync();
+            var items = await q
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<TaskListItemDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-        var items = await q
+            var totalPages = (int)Math.Ceiling(total / (double)pageSize);
+            return Ok(new PagedResultDto<TaskListItemDto>(
+                items, page, pageSize, total, totalPages, page > 1, page < totalPages));
+        }
+
+        // Rare path: memoId provided -> pull the tiny candidate set and filter in-memory by JSON
+        var candidates = await q.ToListAsync(); // you said this is < ~6 before JSON check
+        var filtered = candidates.Where(t =>
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(t.PayloadJson);
+                if (!doc.RootElement.TryGetProperty("memo_id", out var prop)) return false;
+
+                // accept "123" or 123 in the JSON
+                return prop.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.Number => prop.TryGetInt32(out var n) && n == memoId.Value,
+                    System.Text.Json.JsonValueKind.String => int.TryParse(prop.GetString(), out var n) && n == memoId.Value,
+                    _ => false
+                };
+            }
+            catch
+            {
+                return false; // bad JSON -> treat as non-match
+            }
+        }).ToList();
+
+        var totalAfter = filtered.Count;
+        var pageItems = filtered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .ProjectTo<TaskListItemDto>(_mapper.ConfigurationProvider)
-            .ToListAsync();
+            .Select(t => _mapper.Map<TaskListItemDto>(t))
+            .ToList();
 
-        var totalPages = (int)Math.Ceiling(total / (double)pageSize);
+        var totalPagesAfter = (int)Math.Ceiling(totalAfter / (double)pageSize);
         return Ok(new PagedResultDto<TaskListItemDto>(
-            items, page, pageSize, total, totalPages, page > 1, page < totalPages));
+            pageItems, page, pageSize, totalAfter, totalPagesAfter, page > 1, page < totalPagesAfter));
     }
 
     /// <summary>
