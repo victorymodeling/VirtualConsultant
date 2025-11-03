@@ -35,6 +35,7 @@ fact_check_agent = Agent(
         Make sure to check a crosstab both ways, if Question A x Question B doesn't match, look at Question B x Question A. If either matches the question is factual.
         Request all relevant data and try to match the stats up to the survey. Try looking at a few options if a match isn't found right away.
         Do no list any supporting questions you did not personally request and look at the numbers for. Take your time and request all the data you need.
+        For the supporting question please detail the exact source - for example 'Question A Topline' or 'Question A x Question B'
     """)
 )
 
