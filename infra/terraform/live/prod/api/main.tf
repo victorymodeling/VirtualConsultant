@@ -298,7 +298,6 @@ module "api" {
 
   # Loki (optional) — set endpoint when you’re ready
   enable_loki   = true
-  loki_endpoint = "https://loki.victorymodeling.com/loki/api/v1/push"
   loki_labels   = { job = "vc-prod-api" }
 }
 

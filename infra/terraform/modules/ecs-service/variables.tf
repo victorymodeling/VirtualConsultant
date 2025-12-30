@@ -161,12 +161,6 @@ variable "enable_loki" {
   default = false
 }
 
-variable "loki_endpoint" {
-  type        = string
-  default     = ""
-  description = "http(s)://host:3100/loki/api/v1/push"
-}
-
 variable "loki_labels" {
   type        = map(string)
   default     = {}

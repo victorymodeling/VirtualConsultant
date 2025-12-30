@@ -1,8 +1,13 @@
-﻿data "aws_caller_identity" "current" {}
+﻿// main.tf
 
+data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
-
 data "aws_partition" "current" {}
+
+# NEW: look up the shared Loki secret by name
+data "aws_secretsmanager_secret" "loki_basic_auth" {
+  name = "loki-basic-auth"
+}
 
 locals {
   base_tags = {
@@ -31,19 +36,17 @@ locals {
   ]
 
   # -----------------------------
-  # Loki endpoint → FireLens opts
+  # Loki via FireLens (optional)
   # -----------------------------
-  # Parse https://host[:port]/path → host/port/tls
-  loki_is_https  = can(regex("^https://", var.loki_endpoint))
-  loki_no_scheme = replace(replace(var.loki_endpoint, "https://", ""), "http://", "")
-  loki_parts     = split("/", local.loki_no_scheme)
-  loki_host_port = local.loki_parts[0]
-  loki_host      = length(split(":", local.loki_host_port)) > 1 ? split(":", local.loki_host_port)[0] : local.loki_host_port
-  loki_port      = length(split(":", local.loki_host_port)) > 1 ? tonumber(split(":", local.loki_host_port)[1]) : (local.loki_is_https ? 443 : 80)
-
-  # Keep for reference, not used anymore (plugin defaults to /loki/api/v1/push)
-  loki_path_parts = slice(local.loki_parts, 1, length(local.loki_parts))
-  loki_uri        = length(local.loki_path_parts) > 0 ? format("/%s", join("/", local.loki_path_parts)) : "/"
+  # We now source Loki URL + basic auth from Secrets Manager JSON:
+  #   { "loki_url": "https://loki.victorymodeling.com", "loki_user": "...", "loki_pass": "..." }
+  #
+  # Fluent Bit Loki output expects:
+  #   host = base hostname or URL (no sub-path)
+  #   uri  = path (default /loki/api/v1/push)
+  #   tls/port consistent with your endpoint (https -> 443 + tls on)
+  loki_port = "443"
+  loki_tls  = "on"
 
   # Fluent Bit → Loki labels string
   loki_labels = join(",", concat(
@@ -54,28 +57,42 @@ locals {
   # Choose log driver/options for the app container
   app_log_driver = var.enable_loki ? "awsfirelens" : "awslogs"
 
-  # IMPORTANT: Removed 'uri' to satisfy the installed loki output plugin.
+  # IMPORTANT: this configuration uses the built-in Fluent Bit 'loki' output.
+  # We do NOT include credentials or host in plaintext here; those come via secretOptions.
   app_log_options = var.enable_loki ? {
     Name            = "loki"
-    host            = local.loki_host
-    port            = tostring(local.loki_port)
-    tls             = local.loki_is_https ? "on" : "off"
+
+    # host comes from secretOptions (loki_url)
+    port            = local.loki_port
+    tls             = local.loki_tls
+
     labels          = local.loki_labels
 
     # Keep JSON, but drop everything except 'log' and emit it raw
-    line_format     = "key_value"          # plugin flattens records as JSON by default
+    line_format     = "key_value"
     remove_keys     = "container_name,source,container_id,ecs_cluster,ecs_task_arn,ecs_task_definition"
-    drop_single_key = "true"           # <- if only 'log' remains, output its value without quotes
+    drop_single_key = "true"
   } : {
     awslogs-group         = var.log_group_name
     awslogs-region        = var.aws_region
     awslogs-stream-prefix = var.service_name
   }
 
-  # Optional envs (handy only if you switch to a custom FB config later)
-  loki_env = var.enable_loki ? [
-    { name = "FB_Loki_Endpoint", value = var.loki_endpoint },
-    { name = "FB_Loki_Labels",   value = local.loki_labels }
+  # NEW: pass loki_url / loki_user / loki_pass from Secrets Manager JSON via logConfiguration.secretOptions
+  # Uses the :jsonKey:: selector syntax.
+  loki_secret_options = var.enable_loki ? [
+    {
+      name      = "host"
+      valueFrom = "${data.aws_secretsmanager_secret.loki_basic_auth.arn}:loki_url::"
+    },
+    {
+      name      = "http_user"
+      valueFrom = "${data.aws_secretsmanager_secret.loki_basic_auth.arn}:loki_user::"
+    },
+    {
+      name      = "http_passwd"
+      valueFrom = "${data.aws_secretsmanager_secret.loki_basic_auth.arn}:loki_pass::"
+    }
   ] : []
 
   # FireLens sidecar definition (only when enabled)
@@ -84,7 +101,6 @@ locals {
       name      = "log-router"
       image     = "public.ecr.aws/aws-observability/aws-for-fluent-bit:stable"
       essential = true
-      environment = local.loki_env
 
       firelensConfiguration = {
         type    = "fluentbit"
@@ -122,10 +138,13 @@ resource "aws_security_group" "service" {
 }
 
 # --------------------------------
-# IAM: read Secrets Manager (optional)
+# IAM: read Secrets Manager (optional + Loki secret when enabled)
 # --------------------------------
 data "aws_iam_policy_document" "read_secrets" {
-  count = length(var.allow_read_secret_arns) > 0 ? 1 : 0
+  # CHANGED: create this policy doc if either:
+  # - allow_read_secret_arns has entries, OR
+  # - loki is enabled (so we must read loki-basic-auth)
+  count = (length(var.allow_read_secret_arns) > 0 || var.enable_loki) ? 1 : 0
 
   statement {
     sid = "ReadSecrets"
@@ -133,18 +152,21 @@ data "aws_iam_policy_document" "read_secrets" {
       "secretsmanager:GetSecretValue",
       "secretsmanager:DescribeSecret"
     ]
-    resources = var.allow_read_secret_arns
+    resources = concat(
+      var.allow_read_secret_arns,
+      var.enable_loki ? [data.aws_secretsmanager_secret.loki_basic_auth.arn] : []
+    )
   }
 }
 
 resource "aws_iam_policy" "read_secrets" {
-  count  = length(var.allow_read_secret_arns) > 0 ? 1 : 0
+  count  = (length(var.allow_read_secret_arns) > 0 || var.enable_loki) ? 1 : 0
   name   = "${local.name}-read-secrets"
   policy = data.aws_iam_policy_document.read_secrets[0].json
 }
 
 resource "aws_iam_role_policy_attachment" "attach_read_secrets" {
-  count      = length(var.allow_read_secret_arns) > 0 ? 1 : 0
+  count      = (length(var.allow_read_secret_arns) > 0 || var.enable_loki) ? 1 : 0
   role       = var.execution_role_name
   policy_arn = aws_iam_policy.read_secrets[0].arn
 }
@@ -211,10 +233,13 @@ resource "aws_ecs_task_definition" "this" {
         environment = local.env_list
         secrets     = local.secrets_list
 
-        logConfiguration = {
-          logDriver = local.app_log_driver
-          options   = local.app_log_options
-        }
+        logConfiguration = merge(
+          {
+            logDriver = local.app_log_driver
+            options   = local.app_log_options
+          },
+          var.enable_loki ? { secretOptions = local.loki_secret_options } : {}
+        )
       }
     ],
     local.firelens_sidecar
