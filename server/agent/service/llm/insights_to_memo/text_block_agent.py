@@ -12,7 +12,7 @@ from service.data.datasource import ReportingSurveyDataSource
 
 logger = getLogger(__name__)
 
-MAX_CROSSTAB_NUM = 20
+MAX_CROSSTAB_NUM = 15
 
 @dataclass
 class TextBlockDependencies:
