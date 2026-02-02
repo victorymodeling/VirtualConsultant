@@ -71,7 +71,7 @@ async def get_topline_data(ctx: RunContext[InsightDependencies], short_name: str
         Returns:
             str: A formatted string representation of the topline results.
         """
-    if ctx.deps.crosstab_requests <- 0:
+    if ctx.deps.crosstab_requests <= 0:
         return "You've requested too much data. Please return an insight using existing data."
     try:
         logger.info(f"LLM requested topline for {short_name}")
