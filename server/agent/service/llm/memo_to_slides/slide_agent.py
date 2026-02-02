@@ -1,4 +1,5 @@
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.bedrock import BedrockModelSettings
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -21,6 +22,12 @@ slide_agent = Agent(
     model,
     deps_type=SlideDependencies,
     output_type=SlideSpecification,
+    model_settings=BedrockModelSettings(
+        temperature=0.2,
+        bedrock_additional_model_requests_fields={
+            "reasoning_effort": "high"
+        }
+    ),
 )
 
 

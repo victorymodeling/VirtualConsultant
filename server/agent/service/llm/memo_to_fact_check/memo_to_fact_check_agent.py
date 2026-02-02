@@ -1,3 +1,4 @@
+from pydantic_ai import ModelHTTPError
 from pydantic_ai.usage import RunUsage
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from botocore.exceptions import ClientError
@@ -34,7 +35,7 @@ class MemoToFactCheckAgent:
             kbid: str,
             key_number: int,
             memo_doc_id: str,
-            progress_callback: ProgressCallback = None,
+            progress_callback: Optional[ProgressCallback] = None,
     ):
         self.datasource = ReportingSurveyDataSource(kbid=kbid, key_number=key_number)
         self.memo_creator = MemoCreator(memo_doc_id)
@@ -66,7 +67,7 @@ class MemoToFactCheckAgent:
         )
 
     async def _is_fact_checkable(self, sentence: str) -> bool:
-        result: FactCheckOutput = await self._run_agent(sentence, is_fact_checkable_agent, None)
+        result: FactCheckOutput | None = await self._run_agent(sentence, is_fact_checkable_agent, None)
         if result is None:
             return False
         return result.is_fact_checkable
@@ -79,10 +80,13 @@ class MemoToFactCheckAgent:
 
         fact_check_results = []
         for sentence in sentences:
+            if not sentence.strip():
+                continue
             if await self._is_fact_checkable(sentence):
                 fact_check_results.append(await self._get_fact_check(sentence))
 
-            self.progress_callback.increment_progress()
+            if self.progress_callback:
+                self.progress_callback.increment_progress()
         return fact_check_results
 
     async def _run_agent(self, prompt, agent, deps, retries=3):

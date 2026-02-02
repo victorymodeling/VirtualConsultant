@@ -2,6 +2,7 @@ from logging import getLogger
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.bedrock import BedrockModelSettings
 
 from ..base import model
 
@@ -17,6 +18,9 @@ class FactCheckOutput(BaseModel):
 is_fact_checkable_agent = Agent(
     model,
     output_type=FactCheckOutput,
+    model_settings=BedrockModelSettings(
+        temperature=0.2
+    ),
     system_prompt=(
         """You're involved in the fact checking process of a written report. We're just getting started with it. 
         The first step is you'll be given a sentence, and you simply need to identify it as being fact checkable or not.

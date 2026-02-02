@@ -3,6 +3,7 @@ from logging import getLogger
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.bedrock import BedrockModelSettings
 
 from ..base import model
 from service.data.datasource import ReportingSurveyDataSource
@@ -23,6 +24,12 @@ memo_agent = Agent(
     model,
     deps_type=MemoDependencies,
     output_type=MemoOutput,
+    model_settings=BedrockModelSettings(
+        temperature=0.2,
+        bedrock_additional_model_requests_fields={
+            "reasoning_effort": "high"
+        }
+    ),
 )
 
 

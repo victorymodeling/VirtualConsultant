@@ -4,6 +4,7 @@ from logging import getLogger
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.bedrock import BedrockModelSettings
 import re
 
 from ..base import model
@@ -12,9 +13,12 @@ from service.data.datasource import ReportingSurveyDataSource
 
 logger = getLogger(__name__)
 
+MAX_CROSSTAB_NUM = 15
+
 @dataclass
 class FactCheckDependencies:
     datasource: ReportingSurveyDataSource
+    crosstab_requests: int = MAX_CROSSTAB_NUM
 
 
 class FactCheckOutput(BaseModel):
@@ -26,6 +30,12 @@ fact_check_agent = Agent(
     model,
     deps_type=FactCheckDependencies,
     output_type=FactCheckOutput,
+    model_settings=BedrockModelSettings(
+        temperature=0.2,
+        bedrock_additional_model_requests_fields={
+            "reasoning_effort": "high"
+        }
+    ),
     system_prompt=("""
         You're fact checking a written report. You're doing it one claim at a time. The report is analyzing a survey we conducted.
         Most numbers provided should have the question they're referencing listed. The numbers could be wrong.
@@ -81,8 +91,14 @@ async def get_crosstab_data(ctx: RunContext[FactCheckDependencies], short_name: 
         Returns:
             str: A formatted string representation of the crosstab results.
     """
+    if ctx.deps.crosstab_requests <- 0:
+        return "You've requested too many crosstabs, please return a fact check using existing data."
+    ctx.deps.crosstab_requests -= 1
     try:
-        logger.info(f"LLM requested crosstab for {short_name} x {by_short_name}")
+        logger.info(
+            f"LLM requested crosstab ({MAX_CROSSTAB_NUM - ctx.deps.crosstab_requests}/{MAX_CROSSTAB_NUM}): "
+            f"{short_name} x {by_short_name}"
+        )
         crosstab_data = ctx.deps.datasource.crosstab_text(short_name, by_short_name)
         return crosstab_data
     except KeyError:
