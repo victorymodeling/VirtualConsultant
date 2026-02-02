@@ -6,7 +6,7 @@ from service.data.datasource import ReportingSurveyDataSource
 from service.docs.memo_creator import MemoCreator
 
 from .text_block_agent import text_block_agent, TextBlockDependencies, TextOutput
-from .memo_agent import memo_agent, MemoDependencies, MemoOutput
+from .memo_agent import memo_agent, MemoDependencies
 from ..interfaces import ProgressCallback
 
 MEMO_AGENT_DEFAULT_PROMPT = (
@@ -94,10 +94,10 @@ class InsightsToMemoAgent:
             memo_focus=focus,
             default_prompt=self.memo_agent_prompt,
         )
-        response: MemoOutput | None = await self._run_agent(report_blocks_text, memo_agent,  memo_deps)
+        response: str | None = await self._run_agent(report_blocks_text, memo_agent,  memo_deps)
         if not response:
-            raise Exception(f"AI Agent failed to generate a report")
-        return response.full_report
+            return "AI Agent failed to finalize the memo, here is the first draft:\n\n" + report_blocks_text
+        return response
 
 
     # TODO flag usage limits here
