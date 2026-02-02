@@ -13,7 +13,7 @@ from service.data.datasource import ReportingSurveyDataSource
 
 logger = getLogger(__name__)
 
-MAX_CROSSTAB_NUM = 15
+MAX_CROSSTAB_NUM = 30
 
 @dataclass
 class FactCheckDependencies:
@@ -36,10 +36,11 @@ fact_check_agent = Agent(
             "reasoning_effort": "high"
         }
     ),
-    system_prompt=("""
+    system_prompt=(f"""
         You're fact checking a written report. You're doing it one claim at a time. The report is analyzing a survey we conducted.
         Most numbers provided should have the question they're referencing listed. The numbers could be wrong.
         You have access to the full survey including topline and crosstab results, you can fetch the stats as needed to verify claims.
+        Request no more than {MAX_CROSSTAB_NUM} crosstab tables.
         Once you find the numbers backing up a claim, mark it as factual and return the supporting topline and/or crosstab questions.
         If a claim clearly references a question and the numbers do not match, please attach those short names as well.
         Make sure to check a crosstab both ways, if Question A x Question B doesn't match, look at Question B x Question A. If either matches the question is factual.

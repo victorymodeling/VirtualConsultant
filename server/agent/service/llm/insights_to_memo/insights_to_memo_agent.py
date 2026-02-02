@@ -94,7 +94,7 @@ class InsightsToMemoAgent:
             memo_focus=focus,
             default_prompt=self.memo_agent_prompt,
         )
-        response: MemoOutput = await self._run_agent(report_blocks_text, memo_agent,  memo_deps)
+        response: MemoOutput | None = await self._run_agent(report_blocks_text, memo_agent,  memo_deps)
         if not response:
             raise Exception(f"AI Agent failed to generate a report")
         return response.full_report

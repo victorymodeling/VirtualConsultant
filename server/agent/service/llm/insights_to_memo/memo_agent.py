@@ -6,7 +6,6 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.bedrock import BedrockModelSettings
 
 from ..base import model
-from service.data.datasource import ReportingSurveyDataSource
 
 
 logger = getLogger(__name__)
