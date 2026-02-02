@@ -196,6 +196,7 @@ public class TasksController : ControllerBase
     /// Create an artifact for a task.
     /// </summary>
     [HttpPost("{id:int}/artifacts")]
+    [RequestSizeLimit(100_000_000)] // 100 MB for large artifact payloads
     [ProducesResponseType(typeof(TaskArtifactDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaskArtifactDto>> CreateArtifact(
