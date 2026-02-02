@@ -276,7 +276,7 @@ module "api" {
   container_image = local.api_image
   container_port  = 8080
   cpu             = 512
-  memory          = 1024
+  memory          = 2048
 
   desired_count                    = 1
   enable_execute_command           = true

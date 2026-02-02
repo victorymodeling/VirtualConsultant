@@ -163,8 +163,8 @@ module "worker" {
   task_role_name      = data.aws_iam_role.task_worker.name
 
   container_image = local.worker_image
-  cpu             = 256
-  memory          = 1024
+  cpu             = 512
+  memory          = 2048
   container_port  = 8080  # not exposed; harmless
 
   desired_count            = 1
