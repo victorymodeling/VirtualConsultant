@@ -71,6 +71,8 @@ async def get_topline_data(ctx: RunContext[InsightDependencies], short_name: str
         Returns:
             str: A formatted string representation of the topline results.
         """
+    if ctx.deps.crosstab_requests <- 0:
+        return "You've requested too much data. Please return an insight using existing data."
     try:
         logger.info(f"LLM requested topline for {short_name}")
         topline_data = ctx.deps.datasource.topline_text(short_name)
@@ -94,7 +96,7 @@ async def get_crosstab_data(ctx: RunContext[InsightDependencies], short_name: st
         Returns:
             str: A formatted string representation of the crosstab results.
     """
-    if ctx.deps.crosstab_requests <- 0:
+    if ctx.deps.crosstab_requests <= 0:
         return "You've requested too many crosstabs, please return an insight using existing data."
     ctx.deps.crosstab_requests -= 1
     try:

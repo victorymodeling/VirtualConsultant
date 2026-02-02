@@ -1,4 +1,3 @@
-from typing import Optional
 from dataclasses import dataclass
 from logging import getLogger
 
@@ -13,7 +12,7 @@ from service.data.datasource import ReportingSurveyDataSource
 
 logger = getLogger(__name__)
 
-MAX_CROSSTAB_NUM = 15
+MAX_CROSSTAB_NUM = 20
 
 @dataclass
 class TextBlockDependencies:
@@ -82,7 +81,7 @@ async def get_crosstab_data(ctx: RunContext[TextBlockDependencies], short_name: 
         Returns:
             str: A formatted string representation of the crosstab results.
     """
-    if ctx.deps.crosstab_requests <- 0:
+    if ctx.deps.crosstab_requests <= 0:
         return "You've requested too many crosstabs, please return a text block using existing data."
     ctx.deps.crosstab_requests -= 1
     try:
