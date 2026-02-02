@@ -16,7 +16,7 @@ class MemoDependencies:
     default_prompt: str
 
 class MemoOutput(BaseModel):
-    full_report: str = Field(description="Full report text")
+    full_report: str = Field(description="Full report text, should be a similar length as the initial report outline")
 
 
 memo_agent = Agent(
@@ -39,4 +39,5 @@ async def append_data_to_prompt(ctx: RunContext[MemoDependencies]) -> str:
         append_string += f"\nThe client has provided the following focus for the memo: {ctx.deps.memo_focus}\n"
     else:
         append_string += f"\nThe client is leaving the focus of the memo up to your discretion.\n"
+    append_string += "\nYour finished report should be about the same length as the initial report outline.\n"
     return append_string
