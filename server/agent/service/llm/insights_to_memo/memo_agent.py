@@ -29,14 +29,7 @@ class MemoDependencies:
 
 memo_agent = Agent(
     model,
-    deps_type=MemoDependencies,
-    retries=3,
-    model_settings=BedrockModelSettings(
-        temperature=0.3,
-        bedrock_additional_model_requests_fields={
-            "reasoning_effort": "high"
-        }
-    ),
+    deps_type=MemoDependencies
 )
 
 
