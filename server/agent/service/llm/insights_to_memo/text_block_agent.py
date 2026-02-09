@@ -13,6 +13,7 @@ from service.data.datasource import ReportingSurveyDataSource
 logger = getLogger(__name__)
 
 MAX_CROSSTAB_NUM = 15
+MAX_TOPLINE_NUM = 15
 
 @dataclass
 class TextBlockDependencies:
@@ -20,6 +21,7 @@ class TextBlockDependencies:
     insight: str
     default_prompt: str
     crosstab_requests: int = MAX_CROSSTAB_NUM
+    topline_requests: int = MAX_TOPLINE_NUM
 
 
 class TextOutput(BaseModel):
@@ -43,7 +45,7 @@ text_block_agent = Agent(
 async def append_data_to_prompt(ctx: RunContext[TextBlockDependencies]) -> str:
     append_string = ctx.deps.default_prompt
     append_string += f"\nThe question text for the survey is as follows:\n"
-    append_string += ctx.deps.datasource.all_question_text()
+    append_string += ctx.deps.datasource.all_toplines_text()
 
     return append_string.strip()
 
@@ -58,6 +60,9 @@ async def get_topline_data(ctx: RunContext[TextBlockDependencies], short_name: s
         Returns:
             str: A formatted string representation of the topline results.
         """
+    if ctx.deps.topline_requests <= 0 or ctx.deps.crosstab_requests <= 0:
+        return "You've requested too much data, please return a text block using existing data."
+    ctx.deps.topline_requests -= 1
     try:
         logger.info(f"LLM requested topline for {short_name}")
         topline_data = ctx.deps.datasource.topline_text(short_name)
